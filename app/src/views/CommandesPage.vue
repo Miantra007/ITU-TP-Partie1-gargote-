@@ -7,9 +7,13 @@
     </ion-header>
 
     <ion-content class="ion-padding">
-      <ion-refresher slot="fixed" @ionRefresh="chargerCommandes">
+      <ion-refresher slot="fixed" @ionRefresh="rafraichir">
         <ion-refresher-content pulling-text="Tirer pour actualiser" refreshing-text="Chargement..." />
       </ion-refresher>
+
+      <div v-if="chargement && commandes.length === 0" class="ion-text-center ion-padding">
+        <ion-spinner />
+      </div>
 
       <ion-text v-if="commandes.length === 0">
         <p class="ion-text-center">Aucune commande pour le moment.</p>
@@ -33,7 +37,7 @@
               {{ l.quantite }} × {{ l.nom }} <span v-if="index < c.lignes.length - 1">
                 ,</span></span>
 
-            <h3>Total : {{ formatAriary(c.total) }}</h3>
+            <h3>Total : {{ formatAriary(Number(c.total)) }}</h3>
 
           </ion-label>
         </ion-item>
@@ -43,26 +47,40 @@
   </ion-page>
 </template>
 
-<script setup>
-import { IonPage, IonHeader, IonRefresher, IonList, IonItem, IonLabel, IonBadge, IonRefresherContent, IonToolbar, IonTitle, IonContent, IonText, onIonViewWillEnter, createGesture } from '@ionic/vue';
+<script setup lang="ts">
+import { IonPage, IonHeader, IonSpinner, IonRefresher, IonList, IonItem, IonLabel, IonBadge, IonRefresherContent, IonToolbar, IonTitle, IonContent, IonText, onIonViewWillEnter } from '@ionic/vue';
+import type { RefresherCustomEvent } from '@ionic/vue';
 import api from '@/services/api';
-import { formatAriary,formatDate } from '@/utils/format';
+import { ErreurApi } from '@/services/api';
+import { formatAriary, formatDate } from '@/utils/format';
 import { ref } from 'vue';
+import type { Commande } from '@/types/gargote';
 
 
-const commandes = ref([]);
+const commandes = ref<Commande[]>([]);
+const chargement = ref(false);
+
+
 async function chargerCommandes() {
+  chargement.value = true;
   try {
     commandes.value = await api.getCommandes();
 
   } catch (e) {
-    console.error('Erreur lors du chargement des commandes :', e.message);
-  } finally {
-    if (event) {
-      await event.target.complete();
+    if (e instanceof ErreurApi && e.statut === 404) {
+      console.error('Erreur lors du chargement des commandes :', e.message);
     }
+  } finally {
+    chargement.value = false;
   }
 }
+
+
+async function rafraichir(event: RefresherCustomEvent) {
+  await chargerCommandes();
+  await event.target.complete();
+}
+
 onIonViewWillEnter(chargerCommandes);
 
 </script>

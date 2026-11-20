@@ -13,7 +13,7 @@
         <ion-item v-for="l in lignes">
           <ion-label>
             <h2>{{ l.plat.nom }}</h2>
-            <p>{{ l.plat.prix * l.quantite }}</p>
+            <p>{{ Number(l.plat.prix) * l.quantite }}</p>
           </ion-label>
           <ion-button fill="clear" @click.stop.prevent="changerQuantite(l.plat.id, -1)">
             <ion-icon slot="icon-only" :icon="removeCircleOutline" />
@@ -35,15 +35,15 @@
   </ion-page>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { IonPage, IonHeader, IonInput, toastController, IonLabel, alertController, IonButton, useIonRouter, IonIcon, IonButtons, IonList, IonItem, IonToolbar, IonTitle, IonContent, IonText, loadingController } from '@ionic/vue';
 import { usePanier } from '@/composables/usePanier';
 import { removeCircleOutline, addCircleOutline, tabletLandscape, library } from 'ionicons/icons';
 import { ref } from 'vue';
 import { formatAriary } from '@/utils/format';
 import api from '@/services/api';
-
-
+import { ErreurApi } from '@/services/api';
+import type { LigneCommande, NouvelleCommande } from '@/types/gargote';
 
 const { lignes, nombreArticles, changerQuantite, total, vider } = usePanier();
 const table = ref('');
@@ -52,7 +52,7 @@ const envoi = ref(false);
 const ionRouter = useIonRouter();
 
 
-async function afficherToast(message, color) {
+async function afficherToast(message: string, color: string) {
   const toast = await toastController.create({
     message: message,
     color: color,
@@ -76,28 +76,31 @@ async function envoyer() {
     });
     await loading.present();
 
-    const ligneCommande = lignes.value.map(l => ({
+    const ligneCommande: LigneCommande[] = lignes.value.map(l => ({
       plat_id: l.plat.id,
-      quantite: l.quantite,
       nom: l.plat.nom,
+      quantite: l.quantite,
+      prix_unitaire: l.plat.prix,
+      sous_total: l.plat.prix
     }));
 
-    const commande = {
+    const commande: NouvelleCommande = {
       table: Number(table.value),
       lignes: ligneCommande
     };
 
     const resultat = await api.creerCommande(commande);
-    commandeCree = resultat.data ?? resultat;
+    commandeCree = resultat;
     succes = true;
 
   } catch (e) {
-
-    if (e.statut == 422 && e.details.table) {
+    if (e instanceof ErreurApi && e.statut == 422 && e.details.table) {
       erreurTable.value = e.details.table;
     }
     else {
-      await afficherToast(e.message, 'danger');
+      if (e instanceof ErreurApi) {
+        await afficherToast(e.message, 'danger');
+      }
     }
 
   } finally {
@@ -110,7 +113,7 @@ async function envoyer() {
   if (succes) {
     vider();
     table.value = '';
-    await afficherToast(`Commande n°${commandeCree.id} envoyee`, 'success');
+    await afficherToast(`Commande n°${commandeCree?.id} envoyee`, 'success');
     ionRouter.navigate('/tabs/commandes', 'forward', 'replace');
   }
 

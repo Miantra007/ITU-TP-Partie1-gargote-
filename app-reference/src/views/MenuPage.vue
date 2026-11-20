@@ -52,7 +52,7 @@
             fill="clear"
             :disabled="!plat.disponible"
             aria-label="Ajouter au panier"
-            @click.stop.prevent="ajouterAuPanier(plat)"
+            @click.stop.prevent="ajouterAuPanier(plat.id)"
           >
             <ion-icon slot="icon-only" :icon="addCircleOutline" />
           </ion-button>

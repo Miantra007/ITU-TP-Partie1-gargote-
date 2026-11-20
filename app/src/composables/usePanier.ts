@@ -1,10 +1,11 @@
 import { ref, computed } from 'vue';
+import type { Categorie, Commande, NouvelleCommande, LignePanier, Plat } from '@/types/gargote';
 
 // Déclaré EN DEHORS de la fonction : un seul panier pour toute l'application
 
-const lignes = ref([]); // chaque ligne : { plat, quantite }
+const lignes = ref<LignePanier[]>([]); // chaque ligne : { plat, quantite }
 export function usePanier() {
-  function ajouter(plat) {
+  function ajouter(plat: Plat) {
     // TODO : si le plat est déjà dans le panier, quantite + 1,
     //        sinon ajouter une ligne { plat, quantite: 1 }
     const ligne = lignes.value.find((l) => l.plat.id === plat.id);
@@ -18,7 +19,7 @@ export function usePanier() {
     }
   }
 
-  function changerQuantite(platId, delta) {
+  function changerQuantite(platId: number, delta: number) {
     // TODO : ajoute delta (+1 ou -1) à la quantité ;
     //        si la quantité tombe à 0, retirer la ligne
     const ligne = lignes.value.find((l) => l.plat.id === platId);

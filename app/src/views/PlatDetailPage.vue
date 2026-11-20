@@ -52,30 +52,32 @@
 
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { IonPage, IonHeader, IonButton, IonButtons, IonCardSubtitle, IonSpinner, IonCardContent, IonCardTitle, IonCardHeader, IonCard, IonToolbar, IonTitle, IonContent, IonText, IonBackButton, useIonRouter } from '@ionic/vue';
 import { onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import api from '@/services/api';
+import { ErreurApi } from '@/services/api';
 import { usePanier } from '@/composables/usePanier';
+import type { Plat } from '@/types/gargote';
+
 
 const ionRouter = useIonRouter();
 const { ajouter, lignes } = usePanier();
 const route = useRoute();
 const id = route.params.id;
 
-const plat = ref();
+const plat = ref<Plat | null>();
 const chargement = ref(true);
-const erreur = ref(null);
+const erreur = ref<string | null>(null);
 
-async function chargerPlat() {
+
+onMounted(async () => {
     chargement.value = true;
-    plat.value = null;
-    erreur.value = null;
     try {
-        plat.value = await api.getPlatsDetails(id)
+        plat.value = await api.getPlatsDetails(Number(id))
     } catch (e) {
-        if (e.statut === 404) {
+        if (e instanceof ErreurApi && e.statut === 404) {
             erreur.value = "Ce plat n'existe pas.";
         } else {
             erreur.value = "Impossible de charger le plat.";
@@ -83,20 +85,12 @@ async function chargerPlat() {
     } finally {
         chargement.value = false;
     }
-}
+});
 
-async function ajouterAuPanier(plat) {
+async function ajouterAuPanier(plat: Plat) {
     await ajouter(plat);
-    console.log(
-        lignes.value.map((ligne) => ({
-            id: ligne.plat.id,
-            nom: ligne.plat.nom,
-            quantite: ligne.quantite,
-            prix: ligne.plat.prix
-        }))
-    );
     ionRouter.back();
 }
 
-onMounted(chargerPlat);
+
 </script>

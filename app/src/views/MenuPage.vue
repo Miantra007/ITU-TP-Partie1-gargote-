@@ -63,22 +63,24 @@
   </ion-page>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonList, IonItem, onIonViewWillEnter, toastController, IonIcon, onIonViewDidLeave, IonLabel, IonSpinner, IonText, IonButton, IonBadge, IonSearchbar, IonRefresherContent, IonSegment, IonSegmentButton, IonRefresher
+  IonList, IonItem, toastController, IonIcon, onIonViewDidLeave, IonLabel, IonSpinner, IonText, IonButton, IonBadge, IonSearchbar, IonRefresherContent, IonSegment, IonSegmentButton, IonRefresher
 } from '@ionic/vue';
+import type { RefresherCustomEvent } from '@ionic/vue';
 import api from '@/services/api';
 import { usePanier } from '@/composables/usePanier';
-import { formatAriary } from '@/utils/format';
 import { addCircleOutline } from 'ionicons/icons';
+import type { Categorie, Plat } from '@/types/gargote';
+
 
 const { ajouter } = usePanier();
 
-const plats = ref([]);
+const plats = ref<Plat[]>([]);
 const chargement = ref(true);
-const erreur = ref(null);
+const erreur = ref<string | null>(null);
 const recherche = ref('');
 
 const platsFiltres = computed(() => {
@@ -86,7 +88,7 @@ const platsFiltres = computed(() => {
     plat.nom.toLowerCase().includes(recherche.value.toLowerCase())
   );
 });
-const categories = ref([]);
+const categories = ref<Categorie[]>([]);
 const categorieChoisie = ref('toutes');
 
 async function charger() {
@@ -99,7 +101,7 @@ async function charger() {
       plats.value = await api.getPlats();
     }
     else {
-      plats.value = await api.getPlats(categorieChoisie.value);
+      plats.value = await api.getPlats(Number(categorieChoisie.value));
     }
   } catch (e) {
     erreur.value = "Impossible de joindre l'API. Est-elle lancée ?";
@@ -108,12 +110,12 @@ async function charger() {
     chargement.value = false;
   }
 }
-async function rafraichir(event) {
+async function rafraichir(event: RefresherCustomEvent) {
   await charger();
-  event.target.complete(); // arrête l'animation
+  await event.target.complete();
 }
 
-async function ajouterAuPanier(plat) {
+async function ajouterAuPanier(plat: Plat) {
   await ajouter(plat);
   const toast = await toastController.create({
     message: `${plat.nom} ajouté au panier`,
