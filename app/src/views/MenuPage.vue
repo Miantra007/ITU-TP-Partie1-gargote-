@@ -15,6 +15,7 @@
           <ion-segment-button v-for="c in categories" :key="c.id" :value="String(c.id)">
             <ion-label>{{ c.nom }}</ion-label>
           </ion-segment-button>
+          <ion-segment-button value="favoris"><ion-label>Favoris</ion-label></ion-segment-button>
         </ion-segment>
       </ion-toolbar>
     </ion-header>
@@ -37,9 +38,13 @@
         <ion-button expand="block" @click="charger">Réessayer</ion-button>
       </div>
 
+
       <!-- 3. La liste des plats -->
       <ion-list v-else>
         <ion-item v-for="plat in platsFiltres" :key="plat.id" :router-link="`/tabs/menu/${plat.id}`">
+          <ion-button color="danger" fill="clear" @click.stop.prevent="basculer(plat.id)">
+            <ion-icon :icon="estFavori(plat.id) ? heart : heartOutline"></ion-icon>
+          </ion-button>
           <ion-label>
             <h2>{{ plat.nom }}</h2>
             <p>{{ plat.description }}</p>
@@ -72,7 +77,8 @@ import {
 import type { RefresherCustomEvent } from '@ionic/vue';
 import api from '@/services/api';
 import { usePanier } from '@/composables/usePanier';
-import { addCircleOutline } from 'ionicons/icons';
+import { estFavori, basculer, id } from '@/composables/useFavoris';
+import { addCircleOutline, heart, heartOutline } from 'ionicons/icons';
 import type { Categorie, Plat } from '@/types/gargote';
 
 
@@ -84,8 +90,12 @@ const erreur = ref<string | null>(null);
 const recherche = ref('');
 
 const platsFiltres = computed(() => {
-  return plats.value.filter((plat) =>
-    plat.nom.toLowerCase().includes(recherche.value.toLowerCase())
+  return plats.value.filter((plat) => {
+    const correspondRecherche = plat.nom.toLowerCase().includes(recherche.value.toLowerCase())
+    const correspondFavoris = categorieChoisie.value !== 'favoris' || id.value.includes(plat.id);
+
+    return correspondRecherche && correspondFavoris;
+  }
   );
 });
 const categories = ref<Categorie[]>([]);
@@ -97,7 +107,7 @@ async function charger() {
   try {
     categories.value = await api.getCategories();
 
-    if (categorieChoisie.value === 'toutes') {
+    if (categorieChoisie.value === 'toutes' || categorieChoisie.value === 'favoris') {
       plats.value = await api.getPlats();
     }
     else {

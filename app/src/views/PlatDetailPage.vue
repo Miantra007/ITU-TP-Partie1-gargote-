@@ -21,6 +21,7 @@
             </ion-text>
 
             <ion-card v-else-if="plat">
+                <img v-if="photo" :src="photo" alt="Photo du plat" />
                 <ion-card-header>
                     <ion-card-subtitle>
                         {{ plat.categorie.nom }}
@@ -46,6 +47,7 @@
                     @click.stop.prevent="ajouterAuPanier(plat)">Ajouter au
                     panier</ion-button>
             </ion-card>
+            <ion-button @click.stop.prevent="prendrePhoto()">Photographier mon plat</ion-button>
         </ion-content>
 
     </ion-page>
@@ -60,6 +62,7 @@ import api from '@/services/api';
 import { ErreurApi } from '@/services/api';
 import { usePanier } from '@/composables/usePanier';
 import type { Plat } from '@/types/gargote';
+import { Camera } from '@capacitor/camera';
 
 
 const ionRouter = useIonRouter();
@@ -70,6 +73,7 @@ const id = route.params.id;
 const plat = ref<Plat | null>();
 const chargement = ref(true);
 const erreur = ref<string | null>(null);
+const photo = ref<string | undefined>(undefined);
 
 
 onMounted(async () => {
@@ -90,6 +94,15 @@ onMounted(async () => {
 async function ajouterAuPanier(plat: Plat) {
     await ajouter(plat);
     ionRouter.back();
+}
+
+async function prendrePhoto() {
+    try {
+        const resultat = await Camera.takePhoto({ quality: 60, targetWidth: 800 });
+        photo.value = resultat.webPath;
+    } catch {
+        // l'utilisateur a annulé
+    }
 }
 
 

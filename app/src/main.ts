@@ -2,6 +2,10 @@ import { createApp } from 'vue';
 import { IonicVue } from '@ionic/vue';
 import App from './App.vue';
 import router from './router';
+import { restaurerPanier } from '@/composables/usePanier';
+import { restaurerFavoris } from '@/composables/useFavoris.ts';
+
+
 
 /* CSS indispensable au fonctionnement des composants Ionic */
 import '@ionic/vue/css/core.css';
@@ -19,12 +23,16 @@ import '@ionic/vue/css/palettes/dark.system.css';
 
 /* Couleurs de l'application */
 import './theme/variables.css';
+import { defineCustomElements } from '@ionic/pwa-elements/loader';
+
+defineCustomElements(window);
 
 const app = createApp(App)
   .use(IonicVue)   // active Ionic dans Vue
   .use(router);    // active la navigation
 
 // On attend que le routeur soit prêt avant d'afficher l'application
-router.isReady().then(() => {
+
+Promise.all([router.isReady(), restaurerPanier(), restaurerFavoris()]).then(() => {
   app.mount('#app');
 });

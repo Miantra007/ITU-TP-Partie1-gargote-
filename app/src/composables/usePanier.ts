@@ -1,5 +1,7 @@
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { Categorie, Commande, NouvelleCommande, LignePanier, Plat } from '@/types/gargote';
+import { lire, ecrire } from '@/services/stockage';
+
 
 // Déclaré EN DEHORS de la fonction : un seul panier pour toute l'application
 
@@ -42,6 +44,23 @@ export function usePanier() {
   const total = computed(() =>
     lignes.value.reduce((somme, l) => somme + Number(l.plat.prix) * l.quantite, 0)
   );
-
   return { lignes, ajouter, changerQuantite, vider, nombreArticles, total };
+}
+
+function estPanier(x: unknown): x is LignePanier[] {
+  return Array.isArray(x) && x.every(l =>
+    typeof l === 'object' &&
+    l !== null &&
+    typeof l.quantite === 'number' &&
+    typeof l.plat === 'object' &&
+    l.plat !== null &&
+    typeof l.plat.id === 'number' &&
+    typeof l.plat.prix === 'string'
+  );
+}
+
+export async function restaurerPanier(): Promise<void> {
+  const lu = await lire("panier", [], estPanier);
+  lignes.value = lu;
+  watch(lignes, async () => await ecrire("panier", lignes.value), { deep: true });
 }
